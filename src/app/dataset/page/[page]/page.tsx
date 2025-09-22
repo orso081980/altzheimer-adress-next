@@ -21,28 +21,38 @@ interface Dataset {
 interface DatasetResponse {
   datasets: Dataset[];
   pagination: {
-    currentPage: number;
-    itemsPerPage: number;
-    totalItems: number;
+    page: number;
+    limit: number;
+    totalCount: number;
     totalPages: number;
   };
 }
 
-export default function Home() {
+interface Props {
+  params: Promise<{ page: string }>;
+}
+
+export default function DatasetPage({ params }: Props) {
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState({
-    currentPage: 1,
-    itemsPerPage: 10,
-    totalItems: 0,
+    page: 1,
+    limit: 10,
+    totalCount: 0,
     totalPages: 0
   });
   const router = useRouter();
 
   useEffect(() => {
-    fetchDatasets(1);
-  }, []);
+    const getParams = async () => {
+      const resolvedParams = await params;
+      const pageNum = parseInt(resolvedParams.page) || 1;
+      setCurrentPage(pageNum);
+      fetchDatasets(pageNum);
+    };
+    getParams();
+  }, [params]);
 
   const fetchDatasets = async (page: number = 1) => {
     setLoading(true);
@@ -53,7 +63,6 @@ export default function Home() {
       const data: DatasetResponse = await response.json();
       setDatasets(data.datasets || []);
       setPagination(data.pagination);
-      setCurrentPage(page);
     } catch (error) {
       console.error('Error fetching datasets:', error);
     } finally {
@@ -71,18 +80,11 @@ export default function Home() {
       
       if (!response.ok) throw new Error('Failed to delete dataset');
       
-      // Refresh the current page
       fetchDatasets(currentPage);
     } catch (error) {
       console.error('Error deleting dataset:', error);
       alert('Failed to delete dataset');
     }
-  };
-
-  const handlePageChange = (page: number) => {
-    fetchDatasets(page);
-    // Update URL without page reload
-    window.history.pushState({}, '', `/dataset/page/${page}`);
   };
 
   if (loading) {
@@ -97,18 +99,28 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Alzheimer Dataset Manager
-          </h1>
-          <p className="mt-2 text-gray-600">
-            Manage and explore Alzheimer research datasets
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <Link
+                href="/"
+                className="text-blue-600 hover:text-blue-800 text-sm font-medium mb-2 inline-block"
+              >
+                ← Back to Home
+              </Link>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Alzheimer Dataset Manager - Page {currentPage}
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Manage and explore Alzheimer research datasets
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white shadow-sm rounded-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-lg font-medium text-gray-900">
-              Datasets ({pagination.totalItems})
+              Datasets ({pagination.totalCount})
             </h2>
           </div>
           
@@ -162,58 +174,60 @@ export default function Home() {
           {pagination.totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
               <div className="flex-1 flex justify-between sm:hidden">
-                <button
-                  onClick={() => handlePageChange(currentPage - 1)}
-                  disabled={currentPage <= 1}
-                  className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                <Link
+                  href={`/dataset/page/${currentPage - 1}`}
+                  className={`relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 ${
+                    currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''
+                  }`}
                 >
                   Previous
-                </button>
-                <button
-                  onClick={() => handlePageChange(currentPage + 1)}
-                  disabled={currentPage >= pagination.totalPages}
-                  className="ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                </Link>
+                <Link
+                  href={`/dataset/page/${currentPage + 1}`}
+                  className={`ml-3 relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 ${
+                    currentPage >= pagination.totalPages ? 'opacity-50 pointer-events-none' : ''
+                  }`}
                 >
                   Next
-                </button>
+                </Link>
               </div>
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
                     Showing{' '}
-                    <span className="font-medium">{(currentPage - 1) * pagination.itemsPerPage + 1}</span>{' '}
+                    <span className="font-medium">{(currentPage - 1) * pagination.limit + 1}</span>{' '}
                     to{' '}
                     <span className="font-medium">
-                      {Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)}
+                      {Math.min(currentPage * pagination.limit, pagination.totalCount)}
                     </span>{' '}
-                    of <span className="font-medium">{pagination.totalItems}</span> results
+                    of <span className="font-medium">{pagination.totalCount}</span> results
                   </p>
                 </div>
                 <div>
                   <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                    <button
-                      onClick={() => handlePageChange(currentPage - 1)}
-                      disabled={currentPage <= 1}
-                      className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Link
+                      href={`/dataset/page/${currentPage - 1}`}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${
+                        currentPage <= 1 ? 'opacity-50 pointer-events-none' : ''
+                      }`}
                     >
                       Previous
-                    </button>
+                    </Link>
                     
                     {[...Array(Math.min(pagination.totalPages, 7))].map((_, index) => {
                       let page;
                       if (pagination.totalPages <= 7) {
                         page = index + 1;
                       } else {
-                        // Show first, last, and pages around current
                         if (index === 0) page = 1;
                         else if (index === 6) page = pagination.totalPages;
                         else page = Math.max(2, Math.min(pagination.totalPages - 1, currentPage - 3 + index));
                       }
                       
                       return (
-                        <button
+                        <Link
                           key={page}
-                          onClick={() => handlePageChange(page)}
+                          href={`/dataset/page/${page}`}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             page === currentPage
                               ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
@@ -221,17 +235,18 @@ export default function Home() {
                           }`}
                         >
                           {page}
-                        </button>
+                        </Link>
                       );
                     })}
                     
-                    <button
-                      onClick={() => handlePageChange(currentPage + 1)}
-                      disabled={currentPage >= pagination.totalPages}
-                      className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    <Link
+                      href={`/dataset/page/${currentPage + 1}`}
+                      className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 ${
+                        currentPage >= pagination.totalPages ? 'opacity-50 pointer-events-none' : ''
+                      }`}
                     >
                       Next
-                    </button>
+                    </Link>
                   </nav>
                 </div>
               </div>

@@ -41,3 +41,4 @@ yarn-error.log*
 next-env.d.ts
 
 create-admin-user.js
+change-password.ts

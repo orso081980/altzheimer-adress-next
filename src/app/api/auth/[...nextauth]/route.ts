@@ -13,6 +13,7 @@ interface AuthUser {
 }
 
 export const authOptions = {
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -91,6 +92,7 @@ export const authOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)

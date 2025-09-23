@@ -5,19 +5,19 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
+
+// For Vercel serverless, modify URI to include SSL parameters
+const modifiedUri = process.env.NODE_ENV === 'production' && uri ? 
+  `${uri}${uri.includes('?') ? '&' : '?'}ssl=true&retryWrites=true&w=majority&serverSelectionTimeoutMS=10000` :
+  uri;
+
 const options = {
-  // Vercel serverless function optimizations
-  maxPoolSize: 10,
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
+  // Minimal options for better compatibility
+  maxPoolSize: 5,
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 0, // No timeout
   maxIdleTimeMS: 30000,
-  // SSL/TLS options for better compatibility
-  tls: true,
-  tlsAllowInvalidCertificates: false,
-  tlsAllowInvalidHostnames: false,
-  // Retry settings
-  retryWrites: true,
-  retryReads: true,
+  // Let the connection string handle SSL
 };
 
 let client: MongoClient;
@@ -31,13 +31,13 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
+    client = new MongoClient(modifiedUri, options);
     globalWithMongo._mongoClientPromise = client.connect();
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
   // In production mode, it's best to not use a global variable.
-  client = new MongoClient(uri, options);
+  client = new MongoClient(modifiedUri, options);
   clientPromise = client.connect();
 }
 

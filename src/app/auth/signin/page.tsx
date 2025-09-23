@@ -33,7 +33,7 @@ export default function SignIn() {
           router.refresh();
         }
       }
-    } catch (_error) {
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setIsLoading(false);

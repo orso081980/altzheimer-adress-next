@@ -65,7 +65,7 @@ function CreateDatasetContent() {
         setJsonData(parsed);
         setError(null);
         setSuccess(`File "${file.name}" loaded successfully!`);
-      } catch (_err) {
+      } catch {
         setError('Invalid JSON file. Please check the format.');
         setJsonData(null);
       }

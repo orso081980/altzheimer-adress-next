@@ -2,13 +2,18 @@ import { withAuth } from "next-auth/middleware"
 
 export default withAuth(
   function middleware(req) {
-    // Additional middleware logic can go here
+    // Additional middleware logic can go here if needed
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
         // Allow access to auth pages without token
         if (req.nextUrl.pathname.startsWith('/auth/')) {
+          return true
+        }
+        
+        // Allow access to API auth routes
+        if (req.nextUrl.pathname.startsWith('/api/auth/')) {
           return true
         }
         
@@ -28,8 +33,7 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
-     * - root path (homepage)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public|^/$).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
   ],
 }

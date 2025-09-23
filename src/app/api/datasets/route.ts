@@ -1,13 +1,6 @@
 import clientPromise from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
-
-interface UtteranceDocument {
-  speaker?: string;
-  text?: string;
-  timestamp?: string;
-  morphology?: string | Record<string, unknown>;
-  grammar?: string | Record<string, unknown>;
-}
+import { transformDataset } from '@/lib/dataset-utils';
 
 // GET - List datasets with pagination
 export async function GET(request: NextRequest) {
@@ -34,53 +27,7 @@ export async function GET(request: NextRequest) {
     for (let index = 0; index < rawDatasets.length; index++) {
       const doc = rawDatasets[index];
       try {        
-        const participantInfo = doc.metadata?.ID?.find((id: string) => id.includes('PAR')) || '';
-        const participantParts = participantInfo.split('|');
-        const age = participantParts[3] ? participantParts[3].replace(';', '') : 'Unknown';
-        const sex = participantParts[4] || 'Unknown';
-        const group = participantParts[5] || 'Unknown';
-        
-        const transformed = {
-          id: doc._id.toString(),
-          file_name: doc.metadata?.PID || `Dataset_${doc._id}`,
-          participant_count: doc.metadata?.ID ? doc.metadata.ID.length : 0,
-          participants: [{
-            id: participantParts[2] || 'PAR',
-            age: age,
-            sex: sex,
-            group: group,
-            mmse: 'Unknown'
-          }],
-          utterances: Array.isArray(doc.utterances) 
-            ? doc.utterances.map((utterance: UtteranceDocument) => {
-                let start_time = 0, end_time = 0;
-                if (utterance.timestamp && typeof utterance.timestamp === 'string') {
-                  const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
-                  start_time = Math.round(startMs / 1000 * 100) / 100;
-                  end_time = Math.round(endMs / 1000 * 100) / 100;
-                }
-                
-                return {
-                  speaker: utterance.speaker || 'Unknown',
-                  text: utterance.text || '',
-                  start_time,
-                  end_time,
-                  morphology: { raw: utterance.morphology || '' },
-                  grammar: { raw: utterance.grammar || '' },
-                  tier: utterance.speaker || 'Unknown',
-                  value: utterance.text || '',
-                  timestamp: start_time || end_time ? {
-                    start: start_time,
-                    end: end_time
-                  } : undefined
-                };
-              })
-            : [],
-          created_at: doc.created_at,
-          updated_at: doc.updated_at,
-          metadata: doc.metadata
-        };
-        
+        const transformed = transformDataset(doc);
         datasets.push(transformed);
         
       } catch (error) {
@@ -150,35 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Transform dataset using the same logic as GET
-    const participantInfo = Array.isArray(rawDataset.ID) && rawDataset.ID.length > 0 
-      ? rawDataset.ID[0].split('|').filter((part: string) => part.trim() !== '')
-      : [];
-
-    const transformedDataset = {
-      _id: rawDataset._id.toString(),
-      id: rawDataset._id.toString(),
-      file_name: rawDataset.file_name || 'Unknown',
-      participant_count: Array.isArray(rawDataset.ID) ? rawDataset.ID.length : 0,
-      participants: participantInfo.length >= 6 ? [{
-        age: participantInfo[4] || null,
-        sex: participantInfo[5] || null,
-        group: participantInfo[6] || 'Unknown'
-      }] : [{ age: null, sex: null, group: 'Unknown' }],
-      utterances: Array.isArray(rawDataset.utterances) 
-        ? rawDataset.utterances.map((utterance: UtteranceDocument) => ({
-            speaker: utterance.speaker || 'Unknown',
-            text: utterance.text || '',
-            timestamp: typeof utterance.timestamp === 'string' && utterance.timestamp.includes('_')
-              ? {
-                  start: parseInt(utterance.timestamp.split('_')[0]) || 0,
-                  end: parseInt(utterance.timestamp.split('_')[1]) || 0
-                }
-              : { start: 0, end: 0 },
-            morphology: utterance.morphology || {},
-            grammar: utterance.grammar || {}
-          }))
-        : []
-    };
+    const transformedDataset = transformDataset(rawDataset);
 
     return NextResponse.json(transformedDataset, { status: 201 });
 

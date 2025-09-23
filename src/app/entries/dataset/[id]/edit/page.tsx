@@ -110,7 +110,7 @@ function EditDatasetContent({ params }: Props) {
           if (!Array.isArray(utterances)) {
             throw new Error('Utterances must be an array');
           }
-        } catch (_jsonError) {
+        } catch {
           throw new Error('Invalid JSON format for utterances');
         }
       }

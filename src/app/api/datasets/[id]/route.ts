@@ -1,6 +1,7 @@
 import clientPromise from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
+import { transformDataset } from '@/lib/dataset-utils';
 
 // GET - Get single dataset by ID
 export async function GET(
@@ -31,53 +32,7 @@ export async function GET(
 
     console.log(`Found dataset ${id}`);
 
-    // Transform to consistent format using real data structure
-    const participantInfo = rawDataset.metadata?.ID?.find((id: string) => id.includes('PAR')) || '';
-    const participantParts = participantInfo.split('|');
-    const age = participantParts[3] ? participantParts[3].replace(';', '') : 'Unknown';
-    const sex = participantParts[4] || 'Unknown';
-    const group = participantParts[5] || 'Unknown';
-
-    const transformed = {
-      id: rawDataset._id.toString(),
-      file_name: rawDataset.metadata?.PID || `Dataset_${rawDataset._id}`,
-      participant_count: rawDataset.metadata?.ID ? rawDataset.metadata.ID.length : 0,
-      participants: [{
-        id: participantParts[2] || 'PAR',
-        age: age,
-        sex: sex,
-        group: group,
-        mmse: 'Unknown'
-      }],
-      utterances: Array.isArray(rawDataset.utterances) 
-        ? rawDataset.utterances.map((utterance: Record<string, unknown>) => {
-            let start_time = 0, end_time = 0;
-            if (utterance.timestamp && typeof utterance.timestamp === 'string') {
-              const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
-              start_time = Math.round(startMs / 1000 * 100) / 100;
-              end_time = Math.round(endMs / 1000 * 100) / 100;
-            }
-            
-            return {
-              speaker: utterance.speaker || 'Unknown',
-              text: utterance.text || '',
-              start_time,
-              end_time,
-              morphology: { raw: utterance.morphology || '' },
-              grammar: { raw: utterance.grammar || '' },
-              tier: utterance.speaker || 'Unknown',
-              value: utterance.text || '',
-              timestamp: start_time || end_time ? {
-                start: start_time,
-                end: end_time
-              } : undefined
-            };
-          })
-        : [],
-      created_at: rawDataset.created_at || rawDataset.createdAt,
-      updated_at: rawDataset.updated_at || rawDataset.updatedAt,
-      metadata: rawDataset.metadata
-    };
+    const transformed = transformDataset(rawDataset);
 
     return NextResponse.json({ dataset: transformed });
   } catch (error) {
@@ -160,36 +115,8 @@ export async function PUT(
       );
     }
 
-    // Transform using same logic as GET
-    const participantInfo = Array.isArray(updatedDataset.ID) && updatedDataset.ID.length > 0 
-      ? updatedDataset.ID[0].split('|').filter((part: string) => part.trim() !== '')
-      : [];
-
-    const transformed = {
-      _id: updatedDataset._id.toString(),
-      id: updatedDataset._id.toString(),
-      file_name: updatedDataset.file_name || 'Unknown',
-      participant_count: Array.isArray(updatedDataset.ID) ? updatedDataset.ID.length : 0,
-      participants: participantInfo.length >= 6 ? [{
-        age: participantInfo[4] || null,
-        sex: participantInfo[5] || null,
-        group: participantInfo[6] || 'Unknown'
-      }] : [{ age: null, sex: null, group: 'Unknown' }],
-      utterances: Array.isArray(updatedDataset.utterances) 
-        ? updatedDataset.utterances.map((utterance: Record<string, unknown>) => ({
-            speaker: utterance.speaker || 'Unknown',
-            text: utterance.text || '',
-            timestamp: typeof utterance.timestamp === 'string' && utterance.timestamp.includes('_')
-              ? {
-                  start: parseInt(utterance.timestamp.split('_')[0]) || 0,
-                  end: parseInt(utterance.timestamp.split('_')[1]) || 0
-                }
-              : { start: 0, end: 0 },
-            morphology: utterance.morphology || {},
-            grammar: utterance.grammar || {}
-          }))
-        : []
-    };
+    // Transform using shared utility
+    const transformed = transformDataset(updatedDataset);
 
     return NextResponse.json({ dataset: transformed });
 

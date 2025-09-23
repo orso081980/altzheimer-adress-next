@@ -13,7 +13,7 @@ interface AuthUser {
 }
 
 export const authOptions = {
-  // trustHost: true,
+  trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -22,14 +22,7 @@ export const authOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        console.log('🔍 Environment check:', {
-          hasMongoUri: !!process.env.MONGODB_URI,
-          nextAuthUrl: process.env.NEXTAUTH_URL,
-          nodeEnv: process.env.NODE_ENV
-        });
-        
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing credentials');
           return null
         }
 
@@ -37,20 +30,11 @@ export const authOptions = {
           const client = await clientPromise
           const db = client.db('Altzheimer')
           
-          console.log('🔍 Looking for user:', credentials.email.toLowerCase());
-          
           const user = await db.collection('users').findOne({
             email: credentials.email.toLowerCase()
           })
 
-          console.log('🔍 User found:', {
-            exists: !!user,
-            isActive: user?.isActive,
-            hasPassword: !!user?.password
-          });
-
           if (!user || !user.isActive) {
-            console.log('❌ User not found or inactive');
             return null
           }
 
@@ -59,10 +43,7 @@ export const authOptions = {
             user.password
           )
 
-          console.log('🔍 Password validation:', isPasswordValid);
-
           if (!isPasswordValid) {
-            console.log('❌ Invalid password');
             return null
           }
 
@@ -111,7 +92,6 @@ export const authOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
-  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)

@@ -3,44 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-
-interface Dataset {
-  _id: string;
-  filename: string;
-  metadata: {
-    participant_id: string;
-    subject_id?: string;
-    task: string;
-    age?: string;
-    gender?: string;
-    language?: string;
-    investigator?: string;
-    // Additional metadata fields
-    id?: string[];
-    pid?: string;
-    utf8?: string;
-    begin?: string;
-    end?: string;
-    media?: string;
-    languages?: string;
-    participants?: string;
-    type?: string;
-    [key: string]: any;
-  };
-  utterances: Array<{
-    tier: string;
-    value: string;
-    timestamp?: {
-      start: number;
-      end: number;
-    };
-    morphology?: string;
-    grammar?: string;
-  }>;
-  utteranceCount: number;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { Dataset } from '@/types/dataset';
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -74,7 +37,8 @@ export default function DatasetView({ params }: Props) {
         throw new Error('Dataset not found');
       }
       const data = await response.json();
-      setDataset(data);
+      // API now returns { dataset: Dataset } format
+      setDataset(data.dataset);
     } catch (error) {
       console.error('Error fetching dataset:', error);
       setError(error instanceof Error ? error.message : 'Failed to fetch dataset');
@@ -140,7 +104,7 @@ export default function DatasetView({ params }: Props) {
                 ← Back to Datasets
               </Link>
               <h1 className="text-3xl font-bold text-gray-900">
-                {dataset.filename}
+                {dataset.file_name}
               </h1>
             </div>
             <div className="flex space-x-3">
@@ -165,27 +129,25 @@ export default function DatasetView({ params }: Props) {
               </div>
               <div className="px-6 py-4">
                 <dl className="space-y-4">
-                  {dataset.metadata.subject_id && (
+                  {dataset.metadata?.subject_id && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Subject ID</dt>
                       <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.subject_id}</dd>
                     </div>
                   )}
-                  {dataset.metadata.type && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Type</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.type}</dd>
-                    </div>
-                  )}
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Participants</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{dataset.participant_count}</dd>
+                  </div>
                   <div>
                     <dt className="text-sm font-medium text-gray-500">Utterances</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{dataset.utteranceCount}</dd>
+                    <dd className="mt-1 text-sm text-gray-900">{dataset.utterances.length}</dd>
                   </div>
-                  {dataset.createdAt && (
+                  {dataset.created_at && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Created</dt>
                       <dd className="mt-1 text-sm text-gray-900">
-                        {new Date(dataset.createdAt).toLocaleDateString('en-US', {
+                        {new Date(dataset.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short', 
                           day: 'numeric',
@@ -195,11 +157,11 @@ export default function DatasetView({ params }: Props) {
                       </dd>
                     </div>
                   )}
-                  {dataset.updatedAt && (
+                  {dataset.updated_at && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Updated</dt>
                       <dd className="mt-1 text-sm text-gray-900">
-                        {new Date(dataset.updatedAt).toLocaleDateString('en-US', {
+                        {new Date(dataset.updated_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short', 
                           day: 'numeric',
@@ -216,50 +178,36 @@ export default function DatasetView({ params }: Props) {
               <div className="px-6 py-4 border-t border-gray-200">
                 <h3 className="text-md font-medium text-gray-900 mb-4">Metadata</h3>
                 <dl className="space-y-3">
-                  {dataset.metadata.id && dataset.metadata.id.length > 0 && (
+                  {dataset.metadata?.ID && dataset.metadata.ID.length > 0 && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">ID</dt>
                       <dd className="mt-1 text-sm text-gray-900 space-y-1">
-                        {dataset.metadata.id.map((id, index) => (
+                        {dataset.metadata.ID.map((id: string, index: number) => (
                           <div key={index} className="font-mono text-xs bg-gray-50 p-1 rounded">{id}</div>
                         ))}
                       </dd>
                     </div>
                   )}
-                  {dataset.metadata.pid && (
+                  {dataset.metadata?.pid && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">PID</dt>
                       <dd className="mt-1 text-sm text-gray-900 font-mono">{dataset.metadata.pid}</dd>
                     </div>
                   )}
-                  {dataset.metadata.media && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Media</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.media}</dd>
-                    </div>
-                  )}
-                  {dataset.metadata.languages && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Languages</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.languages}</dd>
-                    </div>
-                  )}
-                  {dataset.metadata.participants && (
+                  {dataset.participants.length > 0 && (
                     <div>
                       <dt className="text-sm font-medium text-gray-500">Participants</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.participants}</dd>
-                    </div>
-                  )}
-                  {dataset.metadata.begin && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Begin</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.begin}</dd>
-                    </div>
-                  )}
-                  {dataset.metadata.end && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">End</dt>
-                      <dd className="mt-1 text-sm text-gray-900">{dataset.metadata.end}</dd>
+                      <dd className="mt-1 text-sm text-gray-900">
+                        {dataset.participants.map((participant, index) => (
+                          <div key={index} className="mb-2 p-2 bg-gray-50 rounded">
+                            <div><strong>ID:</strong> {participant.id}</div>
+                            <div><strong>Age:</strong> {participant.age}</div>
+                            <div><strong>Sex:</strong> {participant.sex}</div>
+                            <div><strong>Group:</strong> {participant.group}</div>
+                            <div><strong>MMSE:</strong> {participant.mmse}</div>
+                          </div>
+                        ))}
+                      </dd>
                     </div>
                   )}
                 </dl>
@@ -286,7 +234,7 @@ export default function DatasetView({ params }: Props) {
                       <div key={index} className="px-6 py-4">
                         <div className="flex justify-between items-start mb-2">
                           <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {utterance.tier}
+                            {utterance.speaker}
                           </span>
                           {utterance.timestamp && (
                             <span className="text-xs text-gray-500">
@@ -294,14 +242,14 @@ export default function DatasetView({ params }: Props) {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-900 mb-3">{utterance.value}</p>
+                        <p className="text-sm text-gray-900 mb-3">{utterance.text}</p>
                         
                         {/* Morphology */}
                         {utterance.morphology && (
                           <div className="mb-2">
                             <dt className="text-xs font-medium text-gray-500 mb-1">Morphology:</dt>
                             <dd className="text-xs text-gray-700 font-mono bg-gray-50 p-2 rounded break-all">
-                              {utterance.morphology}
+                              {utterance.morphology.raw || JSON.stringify(utterance.morphology, null, 2)}
                             </dd>
                           </div>
                         )}
@@ -311,7 +259,7 @@ export default function DatasetView({ params }: Props) {
                           <div>
                             <dt className="text-xs font-medium text-gray-500 mb-1">Grammar:</dt>
                             <dd className="text-xs text-gray-700 font-mono bg-gray-50 p-2 rounded break-all">
-                              {utterance.grammar}
+                              {utterance.grammar.raw || JSON.stringify(utterance.grammar, null, 2)}
                             </dd>
                           </div>
                         )}

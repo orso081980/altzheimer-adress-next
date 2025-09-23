@@ -29,62 +29,57 @@ export async function GET(
       );
     }
 
-    // Transform the data to match frontend expectations
-    const participantInfo = rawDataset.metadata?.ID?.find((id: string) => id.includes('Participant')) || '';
-    const investigatorInfo = rawDataset.metadata?.ID?.find((id: string) => id.includes('Investigator')) || '';
-    
-    // Parse participant details: 'eng|Pitt|PAR|74;|male|Control||Participant|||'
-    const [, , , age, gender, group] = participantInfo.split('|');
-    
-    // Generate filename from metadata
-    const filename = `${rawDataset.metadata?.PID || 'unknown'}.cha`;
-    
-    const dataset = {
-      _id: rawDataset._id,
-      filename: filename,
-      metadata: {
-        participant_id: rawDataset.metadata?.PID || 'Unknown',
-        subject_id: rawDataset.metadata?.PID?.split('/')[1]?.split('-')[0] || 'Unknown',
-        task: group || 'Unknown',
-        age: age ? age.replace(';', '') : 'Unknown',
-        gender: gender || 'Unknown',
-        language: rawDataset.metadata?.Languages?.[0] || 'Unknown',
-        investigator: investigatorInfo ? investigatorInfo.split('|')[2] : 'Unknown',
-        // Additional metadata fields from MongoDB
-        id: rawDataset.metadata?.ID || [],
-        pid: rawDataset.metadata?.PID || '',
-        utf8: rawDataset.metadata?.UTF8 || '',
-        begin: rawDataset.metadata?.Begin || '',
-        end: rawDataset.metadata?.End || '',
-        media: rawDataset.metadata?.Media || '',
-        languages: rawDataset.metadata?.Languages || 'Unknown',
-        participants: rawDataset.metadata?.Participants || '',
-        type: 'Comprehensive' // You can determine this based on your data structure
-      },
-      utterances: rawDataset.utterances?.map((utterance: any) => {
-        let timestampObj = null;
-        if (utterance.timestamp && typeof utterance.timestamp === 'string') {
-          const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
-          timestampObj = {
-            start: Math.round(startMs / 1000 * 100) / 100,
-            end: Math.round(endMs / 1000 * 100) / 100
-          };
-        }
-        
-        return {
-          tier: utterance.speaker || 'Unknown',
-          value: utterance.text || '',
-          timestamp: timestampObj,
-          morphology: utterance.morphology || '',
-          grammar: utterance.grammar || ''
-        };
-      }) || [],
-      utteranceCount: rawDataset.utterances?.length || 0,
-      createdAt: rawDataset.createdAt || new Date().toISOString(),
-      updatedAt: rawDataset.updatedAt || new Date().toISOString()
+    console.log(`Found dataset ${id}`);
+
+    // Transform to consistent format using real data structure
+    const participantInfo = rawDataset.metadata?.ID?.find((id: string) => id.includes('PAR')) || '';
+    const participantParts = participantInfo.split('|');
+    const age = participantParts[3] ? participantParts[3].replace(';', '') : 'Unknown';
+    const sex = participantParts[4] || 'Unknown';
+    const group = participantParts[5] || 'Unknown';
+
+    const transformed = {
+      id: rawDataset._id.toString(),
+      file_name: rawDataset.metadata?.PID || `Dataset_${rawDataset._id}`,
+      participant_count: rawDataset.metadata?.ID ? rawDataset.metadata.ID.length : 0,
+      participants: [{
+        id: participantParts[2] || 'PAR',
+        age: age,
+        sex: sex,
+        group: group,
+        mmse: 'Unknown'
+      }],
+      utterances: Array.isArray(rawDataset.utterances) 
+        ? rawDataset.utterances.map((utterance: any) => {
+            let start_time = 0, end_time = 0;
+            if (utterance.timestamp && typeof utterance.timestamp === 'string') {
+              const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
+              start_time = Math.round(startMs / 1000 * 100) / 100;
+              end_time = Math.round(endMs / 1000 * 100) / 100;
+            }
+            
+            return {
+              speaker: utterance.speaker || 'Unknown',
+              text: utterance.text || '',
+              start_time,
+              end_time,
+              morphology: { raw: utterance.morphology || '' },
+              grammar: { raw: utterance.grammar || '' },
+              tier: utterance.speaker || 'Unknown',
+              value: utterance.text || '',
+              timestamp: start_time || end_time ? {
+                start: start_time,
+                end: end_time
+              } : undefined
+            };
+          })
+        : [],
+      created_at: rawDataset.created_at || rawDataset.createdAt,
+      updated_at: rawDataset.updated_at || rawDataset.updatedAt,
+      metadata: rawDataset.metadata
     };
 
-    return NextResponse.json(dataset);
+    return NextResponse.json({ dataset: transformed });
   } catch (error) {
     console.error('Database error:', error);
     return NextResponse.json(
@@ -94,15 +89,14 @@ export async function GET(
   }
 }
 
-// PUT - Update dataset by ID
+// PUT - Update dataset
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const client = await clientPromise;
-    const db = client.db('Altzheimer');
+    const body = await request.json();
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
@@ -111,17 +105,42 @@ export async function PUT(
       );
     }
 
-    const body = await request.json();
-    const updateData = {
-      ...body,
-      updated_at: new Date()
+    const client = await clientPromise;
+    const db = client.db('Altzheimer');
+
+    // Check if dataset exists
+    const existingDataset = await db.collection('altzheimer')
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!existingDataset) {
+      return NextResponse.json(
+        { error: 'Dataset not found' },
+        { status: 404 }
+      );
+    }
+
+    // Build update document
+    const updateDoc: any = {
+      updatedAt: new Date()
     };
 
-    const result = await db.collection('altzheimer')
-      .updateOne(
-        { _id: new ObjectId(id) },
-        { $set: updateData }
-      );
+    // Add fields if provided
+    if (body.file_name) updateDoc.file_name = body.file_name;
+    if (body.UTF8) updateDoc.UTF8 = body.UTF8;
+    if (body.PID) updateDoc.PID = body.PID;
+    if (body.Begin) updateDoc.Begin = body.Begin;
+    if (body.Languages) updateDoc.Languages = body.Languages;
+    if (body.Participants) updateDoc.Participants = body.Participants;
+    if (body.ID) updateDoc.ID = body.ID;
+    if (body.Media) updateDoc.Media = body.Media;
+    if (body.End) updateDoc.End = body.End;
+    if (body.utterances) updateDoc.utterances = body.utterances;
+
+    // Update dataset
+    const result = await db.collection('altzheimer').updateOne(
+      { _id: new ObjectId(id) },
+      { $set: updateDoc }
+    );
 
     if (result.matchedCount === 0) {
       return NextResponse.json(
@@ -130,9 +149,52 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json({ message: 'Dataset updated successfully' });
+    // Fetch and return updated dataset
+    const updatedDataset = await db.collection('altzheimer')
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!updatedDataset) {
+      return NextResponse.json(
+        { error: 'Failed to retrieve updated dataset' },
+        { status: 500 }
+      );
+    }
+
+    // Transform using same logic as GET
+    const participantInfo = Array.isArray(updatedDataset.ID) && updatedDataset.ID.length > 0 
+      ? updatedDataset.ID[0].split('|').filter((part: string) => part.trim() !== '')
+      : [];
+
+    const transformed = {
+      _id: updatedDataset._id.toString(),
+      id: updatedDataset._id.toString(),
+      file_name: updatedDataset.file_name || 'Unknown',
+      participant_count: Array.isArray(updatedDataset.ID) ? updatedDataset.ID.length : 0,
+      participants: participantInfo.length >= 6 ? [{
+        age: participantInfo[4] || null,
+        sex: participantInfo[5] || null,
+        group: participantInfo[6] || 'Unknown'
+      }] : [{ age: null, sex: null, group: 'Unknown' }],
+      utterances: Array.isArray(updatedDataset.utterances) 
+        ? updatedDataset.utterances.map((utterance: any) => ({
+            speaker: utterance.speaker || 'Unknown',
+            text: utterance.text || '',
+            timestamp: typeof utterance.timestamp === 'string' && utterance.timestamp.includes('_')
+              ? {
+                  start: parseInt(utterance.timestamp.split('_')[0]) || 0,
+                  end: parseInt(utterance.timestamp.split('_')[1]) || 0
+                }
+              : { start: 0, end: 0 },
+            morphology: utterance.morphology || {},
+            grammar: utterance.grammar || {}
+          }))
+        : []
+    };
+
+    return NextResponse.json({ dataset: transformed });
+
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Error updating dataset:', error);
     return NextResponse.json(
       { error: 'Failed to update dataset' },
       { status: 500 }
@@ -140,20 +202,32 @@ export async function PUT(
   }
 }
 
-// DELETE - Delete dataset by ID
+// DELETE - Delete dataset
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const client = await clientPromise;
-    const db = client.db('Altzheimer');
     
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
         { error: 'Invalid dataset ID' },
         { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db('Altzheimer');
+
+    // Check if dataset exists
+    const existingDataset = await db.collection('altzheimer')
+      .findOne({ _id: new ObjectId(id) });
+
+    if (!existingDataset) {
+      return NextResponse.json(
+        { error: 'Dataset not found' },
+        { status: 404 }
       );
     }
 
@@ -167,9 +241,13 @@ export async function DELETE(
       );
     }
 
-    return NextResponse.json({ message: 'Dataset deleted successfully' });
+    return NextResponse.json(
+      { message: 'Dataset deleted successfully' },
+      { status: 200 }
+    );
+
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('Error deleting dataset:', error);
     return NextResponse.json(
       { error: 'Failed to delete dataset' },
       { status: 500 }

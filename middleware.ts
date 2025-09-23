@@ -28,7 +28,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder files
+     * - root path (homepage)
      */
-    '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api/auth|_next/static|_next/image|favicon.ico|public|^/$).*)',
   ],
 }

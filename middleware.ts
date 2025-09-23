@@ -17,11 +17,6 @@ export default withAuth(
           return true
         }
         
-        // Allow access to test-db API route for debugging
-        if (req.nextUrl.pathname === '/api/test-db') {
-          return true
-        }
-        
         // Require token for all other pages
         return !!token
       },

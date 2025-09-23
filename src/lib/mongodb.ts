@@ -5,36 +5,12 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-
-// For production (Vercel), use a completely different approach for SSL
-let finalUri: string;
-let options: Record<string, unknown>;
-
-if (process.env.NODE_ENV === 'production') {
-  // Production: Let MongoDB Atlas handle SSL entirely through connection string
-  finalUri = uri!;
-  options = {
-    // Minimal options for Vercel serverless
-    maxPoolSize: 1, // Very small pool for serverless
-    serverSelectionTimeoutMS: 30000, // Longer timeout
-    socketTimeoutMS: 30000,
-    connectTimeoutMS: 30000,
-    // Aggressive SSL bypass for Vercel compatibility
-    tls: true,
-    tlsAllowInvalidCertificates: true,
-    tlsAllowInvalidHostnames: true,
-    checkServerIdentity: false,
-  };
-} else {
-  // Development: Keep existing approach
-  finalUri = uri!;
-  options = {
-    maxPoolSize: 5,
-    serverSelectionTimeoutMS: 10000,
-    socketTimeoutMS: 0,
-    maxIdleTimeMS: 30000,
-  };
-}
+const options = {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  maxIdleTimeMS: 30000,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
@@ -47,13 +23,13 @@ if (process.env.NODE_ENV === 'development') {
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(finalUri, options);
+    client = new MongoClient(uri, options);
     globalWithMongo._mongoClientPromise = client.connect();
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
   // In production mode, it's best to not use a global variable.
-  client = new MongoClient(finalUri, options);
+  client = new MongoClient(uri, options);
   clientPromise = client.connect();
 }
 

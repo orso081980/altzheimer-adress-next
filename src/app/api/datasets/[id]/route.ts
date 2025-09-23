@@ -50,7 +50,7 @@ export async function GET(
         mmse: 'Unknown'
       }],
       utterances: Array.isArray(rawDataset.utterances) 
-        ? rawDataset.utterances.map((utterance: any) => {
+        ? rawDataset.utterances.map((utterance: Record<string, unknown>) => {
             let start_time = 0, end_time = 0;
             if (utterance.timestamp && typeof utterance.timestamp === 'string') {
               const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
@@ -120,7 +120,7 @@ export async function PUT(
     }
 
     // Build update document
-    const updateDoc: any = {
+    const updateDoc: Record<string, unknown> = {
       updatedAt: new Date()
     };
 
@@ -176,7 +176,7 @@ export async function PUT(
         group: participantInfo[6] || 'Unknown'
       }] : [{ age: null, sex: null, group: 'Unknown' }],
       utterances: Array.isArray(updatedDataset.utterances) 
-        ? updatedDataset.utterances.map((utterance: any) => ({
+        ? updatedDataset.utterances.map((utterance: Record<string, unknown>) => ({
             speaker: utterance.speaker || 'Unknown',
             text: utterance.text || '',
             timestamp: typeof utterance.timestamp === 'string' && utterance.timestamp.includes('_')

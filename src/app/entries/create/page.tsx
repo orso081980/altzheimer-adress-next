@@ -6,6 +6,29 @@ import Link from 'next/link';
 import ProtectedPage from '@/components/ProtectedPage';
 import NavigationHeader from '@/components/NavigationHeader';
 
+interface UtteranceItem {
+  speaker?: string;
+  text?: string;
+  morphology?: string | Record<string, unknown>;
+  grammar?: string | Record<string, unknown>;
+  timestamp?: string;
+}
+
+interface UploadedDataset {
+  metadata?: {
+    file_name?: string;
+    UTF8?: string;
+    PID?: string;
+    Begin?: string;
+    Languages?: string;
+    Participants?: string;
+    ID?: unknown[];
+    Media?: string;
+    End?: string;
+  };
+  utterances?: UtteranceItem[];
+}
+
 export default function CreateDataset() {
   return (
     <ProtectedPage>
@@ -20,7 +43,7 @@ function CreateDatasetContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [fileName, setFileName] = useState('');
-  const [jsonData, setJsonData] = useState<any>(null);
+  const [jsonData, setJsonData] = useState<UploadedDataset | null>(null);
   const router = useRouter();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +65,7 @@ function CreateDatasetContent() {
         setJsonData(parsed);
         setError(null);
         setSuccess(`File "${file.name}" loaded successfully!`);
-      } catch (err) {
+      } catch (_err) {
         setError('Invalid JSON file. Please check the format.');
         setJsonData(null);
       }
@@ -210,7 +233,7 @@ function CreateDatasetContent() {
                       <div className="mt-4">
                         <span className="font-medium text-gray-700">Sample utterances:</span>
                         <div className="mt-2 space-y-2 max-h-48 overflow-y-auto">
-                          {jsonData.utterances.slice(0, 3).map((utterance: any, index: number) => (
+                          {jsonData.utterances.slice(0, 3).map((utterance: UtteranceItem, index: number) => (
                             <div key={index} className="bg-white p-3 rounded border text-sm">
                               <div className="font-medium text-gray-800">
                                 {utterance.speaker}: {utterance.text}

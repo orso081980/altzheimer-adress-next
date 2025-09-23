@@ -25,11 +25,11 @@ export interface Utterance {
   end_time: number;
   morphology: {
     raw?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   grammar: {
     raw?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   // Optional legacy fields for backward compatibility
   tier?: string;
@@ -54,7 +54,7 @@ export interface DatasetMetadata {
   SEX?: string[];
   Group?: string[];
   MMSE?: (string | number)[];
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // API response interfaces

@@ -49,41 +49,41 @@ function EditDatasetContent({ params }: Props) {
   }, [params]);
 
   useEffect(() => {
+    const fetchDataset = async () => {
+      try {
+        const response = await fetch(`/api/datasets/${id}`);
+        if (!response.ok) {
+          throw new Error('Dataset not found');
+        }
+        const data = await response.json();
+        const fetchedDataset = data.dataset;
+        
+        setDataset(fetchedDataset);
+        
+        // Populate form data
+        setFormData({
+          file_name: fetchedDataset.file_name || '',
+          UTF8: fetchedDataset.UTF8 || '',
+          PID: fetchedDataset.PID || '',
+          Begin: fetchedDataset.Begin || '',
+          Languages: fetchedDataset.Languages || '',
+          Participants: fetchedDataset.Participants || '',
+          Media: fetchedDataset.Media || '',
+          End: fetchedDataset.End || '',
+          utterancesJson: JSON.stringify(fetchedDataset.utterances || [], null, 2)
+        });
+      } catch (error) {
+        console.error('Error fetching dataset:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch dataset');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (id) {
       fetchDataset();
     }
   }, [id]);
-
-  const fetchDataset = async () => {
-    try {
-      const response = await fetch(`/api/datasets/${id}`);
-      if (!response.ok) {
-        throw new Error('Dataset not found');
-      }
-      const data = await response.json();
-      const fetchedDataset = data.dataset;
-      
-      setDataset(fetchedDataset);
-      
-      // Populate form data
-      setFormData({
-        file_name: fetchedDataset.file_name || '',
-        UTF8: fetchedDataset.UTF8 || '',
-        PID: fetchedDataset.PID || '',
-        Begin: fetchedDataset.Begin || '',
-        Languages: fetchedDataset.Languages || '',
-        Participants: fetchedDataset.Participants || '',
-        Media: fetchedDataset.Media || '',
-        End: fetchedDataset.End || '',
-        utterancesJson: JSON.stringify(fetchedDataset.utterances || [], null, 2)
-      });
-    } catch (error) {
-      console.error('Error fetching dataset:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch dataset');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,7 +110,7 @@ function EditDatasetContent({ params }: Props) {
           if (!Array.isArray(utterances)) {
             throw new Error('Utterances must be an array');
           }
-        } catch (jsonError) {
+        } catch (_jsonError) {
           throw new Error('Invalid JSON format for utterances');
         }
       }

@@ -45,7 +45,7 @@ export interface ValidationError {
   message: string;
 }
 
-export function validateDataset(data: any, isUpdate = false): ValidationError[] {
+export function validateDataset(data: Record<string, unknown>, isUpdate = false): ValidationError[] {
   const errors: ValidationError[] = [];
 
   Object.entries(DATASET_VALIDATION).forEach(([field, rules]) => {
@@ -85,7 +85,7 @@ export function validateDataset(data: any, isUpdate = false): ValidationError[] 
 
   // Special validation for utterances array
   if (data.utterances && Array.isArray(data.utterances)) {
-    data.utterances.forEach((utterance: any, index: number) => {
+    data.utterances.forEach((utterance: Record<string, unknown>, index: number) => {
       if (!utterance.text || typeof utterance.text !== 'string') {
         errors.push({ field: `utterances[${index}].text`, message: 'Utterance text is required and must be a string' });
       }
@@ -98,7 +98,7 @@ export function validateDataset(data: any, isUpdate = false): ValidationError[] 
   return errors;
 }
 
-export function validateUser(data: any, isUpdate = false): ValidationError[] {
+export function validateUser(data: Record<string, unknown>, isUpdate = false): ValidationError[] {
   const errors: ValidationError[] = [];
 
   Object.entries(USER_VALIDATION).forEach(([field, rules]) => {

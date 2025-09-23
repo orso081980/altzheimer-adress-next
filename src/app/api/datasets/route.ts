@@ -1,6 +1,13 @@
 import clientPromise from '@/lib/mongodb';
 import { NextRequest, NextResponse } from 'next/server';
-import { Dataset } from '@/types/dataset';
+
+interface UtteranceDocument {
+  speaker?: string;
+  text?: string;
+  timestamp?: string;
+  morphology?: string | Record<string, unknown>;
+  grammar?: string | Record<string, unknown>;
+}
 
 // GET - List datasets with pagination
 export async function GET(request: NextRequest) {
@@ -45,7 +52,7 @@ export async function GET(request: NextRequest) {
             mmse: 'Unknown'
           }],
           utterances: Array.isArray(doc.utterances) 
-            ? doc.utterances.map((utterance: any) => {
+            ? doc.utterances.map((utterance: UtteranceDocument) => {
                 let start_time = 0, end_time = 0;
                 if (utterance.timestamp && typeof utterance.timestamp === 'string') {
                   const [startMs, endMs] = utterance.timestamp.split('_').map(Number);
@@ -158,7 +165,7 @@ export async function POST(request: NextRequest) {
         group: participantInfo[6] || 'Unknown'
       }] : [{ age: null, sex: null, group: 'Unknown' }],
       utterances: Array.isArray(rawDataset.utterances) 
-        ? rawDataset.utterances.map((utterance: any) => ({
+        ? rawDataset.utterances.map((utterance: UtteranceDocument) => ({
             speaker: utterance.speaker || 'Unknown',
             text: utterance.text || '',
             timestamp: typeof utterance.timestamp === 'string' && utterance.timestamp.includes('_')

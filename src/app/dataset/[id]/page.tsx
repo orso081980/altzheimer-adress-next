@@ -9,7 +9,7 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-export default function DatasetView({ params }: Props) {
+export default function ViewDataset({ params }: Props) {
   const [dataset, setDataset] = useState<Dataset | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,27 +25,26 @@ export default function DatasetView({ params }: Props) {
   }, [params]);
 
   useEffect(() => {
+    const fetchDataset = async () => {
+      try {
+        const response = await fetch(`/api/datasets/${id}`);
+        if (!response.ok) {
+          throw new Error('Dataset not found');
+        }
+        const data = await response.json();
+        setDataset(data.dataset);
+      } catch (error) {
+        console.error('Error fetching dataset:', error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch dataset');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (id) {
       fetchDataset();
     }
   }, [id]);
-
-  const fetchDataset = async () => {
-    try {
-      const response = await fetch(`/api/datasets/${id}`);
-      if (!response.ok) {
-        throw new Error('Dataset not found');
-      }
-      const data = await response.json();
-      // API now returns { dataset: Dataset } format
-      setDataset(data.dataset);
-    } catch (error) {
-      console.error('Error fetching dataset:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch dataset');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDelete = async () => {
     if (!confirm('Are you sure you want to delete this dataset?')) return;

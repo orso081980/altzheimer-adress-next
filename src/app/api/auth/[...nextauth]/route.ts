@@ -2,9 +2,15 @@ import NextAuth from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import clientPromise from '@/lib/mongodb'
 import bcrypt from 'bcryptjs'
-import { User } from '@/types/user'
 import { JWT } from 'next-auth/jwt'
 import { Session } from 'next-auth'
+
+interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 export const authOptions = {
   providers: [
@@ -67,7 +73,7 @@ export const authOptions = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, user }: { token: JWT; user: any }) {
+    async jwt({ token, user }: { token: JWT; user: AuthUser | null }) {
       if (user) {
         token.role = user.role
       }

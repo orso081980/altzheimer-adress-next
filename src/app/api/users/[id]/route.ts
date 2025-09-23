@@ -86,7 +86,7 @@ export async function PUT(
     }
 
     // Build update document
-    const updateDoc: any = {
+    const updateDoc: Record<string, unknown> = {
       updatedAt: new Date()
     };
 

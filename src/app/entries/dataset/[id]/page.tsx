@@ -254,7 +254,7 @@ function DatasetViewContent({ params }: Props) {
             <div className="border-t border-gray-200">
               <div className="space-y-6">
                 {dataset.utterances.slice(0, 20).map((utterance, index) => (
-                  <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
+                  <div key={index} className="border-b border-gray-200 px-4 py-5 last:border-b-0">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center space-x-3">
                         <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">

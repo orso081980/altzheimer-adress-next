@@ -5,7 +5,20 @@ if (!process.env.MONGODB_URI) {
 }
 
 const uri = process.env.MONGODB_URI;
-const options = {};
+const options = {
+  // Vercel serverless function optimizations
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  maxIdleTimeMS: 30000,
+  // SSL/TLS options for better compatibility
+  tls: true,
+  tlsAllowInvalidCertificates: false,
+  tlsAllowInvalidHostnames: false,
+  // Retry settings
+  retryWrites: true,
+  retryReads: true,
+};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;

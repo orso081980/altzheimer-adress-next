@@ -13,7 +13,7 @@ interface AuthUser {
 }
 
 export const authOptions = {
-  trustHost: true,
+  // trustHost: true,
   providers: [
     CredentialsProvider({
       name: 'credentials',

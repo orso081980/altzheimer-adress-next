@@ -12,13 +12,14 @@ export interface SecurityEvent {
 }
 
 export class SecurityTracker {
-  private static async getClientIP(headers: Headers | Record<string, any>): Promise<string> {
+  private static async getClientIP(headers: Headers | Record<string, string | string[] | undefined>): Promise<string> {
     // Handle both Headers object (from fetch) and plain object (from NextRequest)
-    const getHeader = (name: string) => {
+    const getHeader = (name: string): string | null => {
       if (headers instanceof Headers) {
         return headers.get(name);
       }
-      return headers[name];
+      const value = headers[name];
+      return Array.isArray(value) ? value[0] : (value || null);
     };
 
     const forwarded = getHeader('x-forwarded-for');
@@ -34,7 +35,7 @@ export class SecurityTracker {
   }
 
   static async logEvent(
-    headers: Headers | Record<string, any>,
+    headers: Headers | Record<string, string | string[] | undefined>,
     event: SecurityEvent['event'],
     path: string,
     email?: string,
@@ -44,7 +45,7 @@ export class SecurityTracker {
       const ip = await this.getClientIP(headers);
       const userAgent = headers instanceof Headers 
         ? headers.get('user-agent') || 'unknown'
-        : headers['user-agent'] || 'unknown';
+        : (Array.isArray(headers['user-agent']) ? headers['user-agent'][0] : headers['user-agent']) || 'unknown';
 
       const securityEvent: SecurityEvent = {
         ip,

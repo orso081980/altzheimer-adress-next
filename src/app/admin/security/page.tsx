@@ -6,7 +6,7 @@ import NavigationHeader from '@/components/NavigationHeader';
 import Link from 'next/link';
 
 interface SecurityEvent {
-  _id: string;
+  _id?: string;
   ip: string;
   userAgent: string;
   event: 'page_access' | 'login_success' | 'login_failed' | 'unauthorized_access';
@@ -162,8 +162,8 @@ export default function SecurityDashboard() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredEvents.map((event) => (
-                        <tr key={event._id} className="hover:bg-gray-50">
+                      {filteredEvents.map((event, index) => (
+                        <tr key={event._id || `${event.ip}-${event.timestamp}-${index}`} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEventColor(event.event)}`}>
                               {getEventIcon(event.event)} {event.event.replace('_', ' ')}

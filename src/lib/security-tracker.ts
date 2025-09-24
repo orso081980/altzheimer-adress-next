@@ -1,4 +1,6 @@
 // Security Tracker Plugin - Core functionality
+// Note: This file should only be used in server-side contexts (API routes)
+// not in middleware due to Edge Runtime limitations
 import clientPromise from '@/lib/mongodb';
 
 export interface SecurityEvent {

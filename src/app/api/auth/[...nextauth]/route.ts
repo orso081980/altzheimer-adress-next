@@ -35,16 +35,20 @@ export const authOptions = {
           })
 
           if (!user || !user.isActive) {
-            // Log failed login attempt
-            await db.collection('security_logs').insertOne({
-              ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
-              userAgent: req?.headers?.['user-agent'] || 'unknown',
-              event: 'login_failed',
-              path: '/auth/signin',
-              email: credentials.email.toLowerCase(),
-              timestamp: new Date(),
-              details: user ? 'User account inactive' : 'User not found',
-            });
+            // Log failed login attempt - simplified for Edge Runtime compatibility
+            try {
+              await db.collection('security_logs').insertOne({
+                ip: 'unknown', // IP tracking will be handled client-side
+                userAgent: 'unknown',
+                event: 'login_failed',
+                path: '/auth/signin',
+                email: credentials.email.toLowerCase(),
+                timestamp: new Date(),
+                details: user ? 'User account inactive' : 'User not found',
+              });
+            } catch (error) {
+              console.error('Failed to log security event:', error);
+            }
             return null
           }
 
@@ -54,16 +58,20 @@ export const authOptions = {
           )
 
           if (!isPasswordValid) {
-            // Log failed login attempt
-            await db.collection('security_logs').insertOne({
-              ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
-              userAgent: req?.headers?.['user-agent'] || 'unknown',
-              event: 'login_failed',
-              path: '/auth/signin',
-              email: credentials.email.toLowerCase(),
-              timestamp: new Date(),
-              details: 'Invalid password',
-            });
+            // Log failed login attempt - simplified for Edge Runtime compatibility
+            try {
+              await db.collection('security_logs').insertOne({
+                ip: 'unknown', // IP tracking will be handled client-side
+                userAgent: 'unknown',
+                event: 'login_failed',
+                path: '/auth/signin',
+                email: credentials.email.toLowerCase(),
+                timestamp: new Date(),
+                details: 'Invalid password',
+              });
+            } catch (error) {
+              console.error('Failed to log security event:', error);
+            }
             return null
           }
 
@@ -73,16 +81,20 @@ export const authOptions = {
             { $set: { lastLogin: new Date() } }
           )
 
-          // Log successful login
-          await db.collection('security_logs').insertOne({
-            ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
-            userAgent: req?.headers?.['user-agent'] || 'unknown',
-            event: 'login_success',
-            path: '/auth/signin',
-            email: user.email.toLowerCase(),
-            timestamp: new Date(),
-            details: 'Successful authentication',
-          });
+          // Log successful login - simplified for Edge Runtime compatibility
+          try {
+            await db.collection('security_logs').insertOne({
+              ip: 'unknown', // IP tracking will be handled client-side
+              userAgent: 'unknown',
+              event: 'login_success',
+              path: '/auth/signin',
+              email: user.email.toLowerCase(),
+              timestamp: new Date(),
+              details: 'Successful authentication',
+            });
+          } catch (error) {
+            console.error('Failed to log security event:', error);
+          }
 
           return {
             id: user._id.toString(),

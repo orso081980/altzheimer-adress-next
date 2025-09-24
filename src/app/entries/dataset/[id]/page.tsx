@@ -253,64 +253,95 @@ function DatasetViewContent({ params }: Props) {
             </div>
             <div className="border-t border-gray-200">
               <div className="space-y-6">
-                {dataset.utterances.slice(0, 20).map((utterance, index) => (
-                  <div key={index} className="border-b border-gray-200 px-4 py-5 last:border-b-0">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-700">
-                            {utterance.speaker?.charAt(0).toUpperCase()}
+                {dataset.utterances.map((utterance, index) => {
+                  console.log('utterance', index, utterance, 'typeof:', typeof utterance);
+                  console.log('utterance.text:', utterance.text, 'typeof:', typeof utterance.text);
+                  console.log('utterance.speaker:', utterance.speaker, 'typeof:', typeof utterance.speaker);
+                  console.log('utterance.morphology:', utterance.morphology, 'typeof:', typeof utterance.morphology);
+                  console.log('utterance.grammar:', utterance.grammar, 'typeof:', typeof utterance.grammar);
+                  
+                  // Ultra-safe string conversion - will never return an object
+                  const getSafeString = (value: any): string => {
+                    if (value === null || value === undefined) return '';
+                    if (typeof value === 'string') return value;
+                    if (typeof value === 'number') return value.toString();
+                    if (typeof value === 'boolean') return value.toString();
+                    if (typeof value === 'object') {
+                      try {
+                        if (value.raw && typeof value.raw === 'string') return value.raw;
+                        return JSON.stringify(value);
+                      } catch {
+                        return '[Object]';
+                      }
+                    }
+                    return String(value);
+                  };
+
+                  const safeText = getSafeString(utterance.text);
+                  const safeSpeaker = getSafeString(utterance.speaker);
+                  const safeMorphology = getSafeString(utterance.morphology);
+                  const safeGrammar = getSafeString(utterance.grammar);
+                  
+                  return (
+                    <div key={index} className="border-b border-gray-200 px-4 py-5 last:border-b-0">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-xs font-medium text-blue-700">
+                              {safeSpeaker.charAt(0).toUpperCase() || 'U'}
+                            </span>
+                          </div>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {safeSpeaker || 'Unknown Speaker'}
                           </span>
+                          {utterance.timestamp && typeof utterance.timestamp === 'object' && utterance.timestamp.start !== undefined && utterance.timestamp.end !== undefined && (
+                            <span className="text-xs text-gray-500">
+                              {getSafeString(utterance.timestamp.start)}s - {getSafeString(utterance.timestamp.end)}s
+                            </span>
+                          )}
                         </div>
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {utterance.speaker || 'Unknown Speaker'}
-                        </span>
-                        {utterance.timestamp && (
-                          <span className="text-xs text-gray-500">
-                            {utterance.timestamp.start}s - {utterance.timestamp.end}s
-                          </span>
-                        )}
                       </div>
+                      <div className="text-gray-900 mb-4 leading-relaxed text-base">
+                        {safeText}
+                      </div>
+                      
+                      {/* Debug raw utterance fields */}
+                      {process.env.NODE_ENV === 'development' && (
+                        <div className="text-xs text-red-500 bg-red-50 p-2 rounded">
+                          <div>Raw text: {JSON.stringify(utterance.text)}</div>
+                          <div>Raw speaker: {JSON.stringify(utterance.speaker)}</div>
+                          <div>Raw morphology: {JSON.stringify(utterance.morphology)}</div>
+                          <div>Raw grammar: {JSON.stringify(utterance.grammar)}</div>
+                          <div>Raw timestamp: {JSON.stringify(utterance.timestamp)}</div>
+                        </div>
+                      )}
+                      {/* Morphology Section - Safe handling */}
+                      {utterance.morphology && (
+                        <div className="mb-3">
+                          <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Morphology:</span>
+                          <div className="text-sm text-purple-700 font-mono bg-purple-50 p-3 rounded-md mt-1 break-all">
+                            {safeMorphology}
+                          </div>
+                        </div>
+                      )}
+                      {/* Grammar Section - Safe handling */}
+                      {utterance.grammar && (
+                        <div className="mb-3">
+                          <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Grammar:</span>
+                          <div className="text-sm text-green-700 font-mono bg-green-50 p-3 rounded-md mt-1 break-all">
+                            {safeGrammar}
+                          </div>
+                        </div>
+                      )}
+                      {/* Timestamp raw data - only show if available */}
+                      {utterance.timestamp && typeof utterance.timestamp === 'string' && (
+                        <div className="text-xs text-gray-400 mt-2">
+                          Raw timestamp: {getSafeString(utterance.timestamp)}
+                        </div>
+                      )}
                     </div>
-                    
-                    <div className="text-gray-900 mb-4 leading-relaxed text-base">
-                      {utterance.text}
-                    </div>
-                    
-                    {/* Morphology Section - Safe handling */}
-                    {utterance.morphology && (
-                      <div className="mb-3">
-                        <span className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Morphology:</span>
-                        <div className="text-sm text-purple-700 font-mono bg-purple-50 p-3 rounded-md mt-1 break-all">
-                          {typeof utterance.morphology === 'string' 
-                            ? utterance.morphology 
-                            : utterance.morphology.raw || JSON.stringify(utterance.morphology, null, 2)
-                          }
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Grammar Section - Safe handling */}
-                    {utterance.grammar && (
-                      <div className="mb-3">
-                        <span className="text-xs font-semibold text-green-600 uppercase tracking-wide">Grammar:</span>
-                        <div className="text-sm text-green-700 font-mono bg-green-50 p-3 rounded-md mt-1 break-all">
-                          {typeof utterance.grammar === 'string' 
-                            ? utterance.grammar 
-                            : utterance.grammar.raw || JSON.stringify(utterance.grammar, null, 2)
-                          }
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Timestamp raw data - only show if available */}
-                    {utterance.timestamp && typeof utterance.timestamp === 'string' && (
-                      <div className="text-xs text-gray-400 mt-2">
-                        Raw timestamp: {utterance.timestamp}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {dataset.utterances.length > 20 && (
                 <div className="px-4 py-3 bg-gray-50 text-center">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import ProtectedPage from "@/components/ProtectedPage";
 import NavigationHeader from "@/components/NavigationHeader";
 
@@ -43,6 +44,12 @@ export default function UsersPage() {
                 <h1 className="text-3xl font-bold text-gray-900">Users</h1>
                 <p className="mt-1 text-sm text-gray-600">List of all registered users</p>
               </div>
+              <Link
+                href="/admin/security"
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                🔒 Security Dashboard
+              </Link>
             </div>
           </div>
           {/* Users Table */}

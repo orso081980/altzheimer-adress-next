@@ -21,7 +21,7 @@ export const authOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' }
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -35,6 +35,16 @@ export const authOptions = {
           })
 
           if (!user || !user.isActive) {
+            // Log failed login attempt
+            await db.collection('security_logs').insertOne({
+              ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
+              userAgent: req?.headers?.['user-agent'] || 'unknown',
+              event: 'login_failed',
+              path: '/auth/signin',
+              email: credentials.email.toLowerCase(),
+              timestamp: new Date(),
+              details: user ? 'User account inactive' : 'User not found',
+            });
             return null
           }
 
@@ -44,6 +54,16 @@ export const authOptions = {
           )
 
           if (!isPasswordValid) {
+            // Log failed login attempt
+            await db.collection('security_logs').insertOne({
+              ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
+              userAgent: req?.headers?.['user-agent'] || 'unknown',
+              event: 'login_failed',
+              path: '/auth/signin',
+              email: credentials.email.toLowerCase(),
+              timestamp: new Date(),
+              details: 'Invalid password',
+            });
             return null
           }
 
@@ -52,6 +72,17 @@ export const authOptions = {
             { _id: user._id },
             { $set: { lastLogin: new Date() } }
           )
+
+          // Log successful login
+          await db.collection('security_logs').insertOne({
+            ip: req?.headers?.['x-forwarded-for']?.split(',')[0] || req?.headers?.['x-real-ip'] || 'unknown',
+            userAgent: req?.headers?.['user-agent'] || 'unknown',
+            event: 'login_success',
+            path: '/auth/signin',
+            email: user.email.toLowerCase(),
+            timestamp: new Date(),
+            details: 'Successful authentication',
+          });
 
           return {
             id: user._id.toString(),

@@ -1,8 +1,29 @@
 import { withAuth } from "next-auth/middleware"
+import { SecurityTracker } from "./src/lib/security-tracker"
 
 export default withAuth(
-  function middleware(req) {
-    // Additional middleware logic can go here if needed
+  async function middleware(req) {
+    // Track access to entries pages
+    if (req.nextUrl.pathname.startsWith('/entries/')) {
+      await SecurityTracker.logEvent(
+        req.headers,
+        'page_access',
+        req.nextUrl.pathname,
+        undefined,
+        `Access to ${req.nextUrl.pathname}`
+      );
+    }
+    
+    // Track unauthorized access attempts
+    if (!req.nextauth.token && req.nextUrl.pathname.startsWith('/entries/')) {
+      await SecurityTracker.logEvent(
+        req.headers,
+        'unauthorized_access',
+        req.nextUrl.pathname,
+        undefined,
+        'Attempted access without authentication'
+      );
+    }
   },
   {
     callbacks: {

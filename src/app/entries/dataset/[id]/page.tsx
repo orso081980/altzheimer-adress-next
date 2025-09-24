@@ -261,14 +261,22 @@ function DatasetViewContent({ params }: Props) {
                   console.log('utterance.grammar:', utterance.grammar, 'typeof:', typeof utterance.grammar);
                   
                   // Ultra-safe string conversion - will never return an object
-                  const getSafeString = (value: any): string => {
+                  const getSafeString = (value: unknown): string => {
                     if (value === null || value === undefined) return '';
                     if (typeof value === 'string') return value;
                     if (typeof value === 'number') return value.toString();
                     if (typeof value === 'boolean') return value.toString();
                     if (typeof value === 'object') {
                       try {
-                        if (value.raw && typeof value.raw === 'string') return value.raw;
+                        // Type guard for objects with a 'raw' property
+                        if (
+                          typeof value === 'object' &&
+                          value !== null &&
+                          'raw' in value &&
+                          typeof (value as { raw?: unknown }).raw === 'string'
+                        ) {
+                          return (value as { raw: string }).raw;
+                        }
                         return JSON.stringify(value);
                       } catch {
                         return '[Object]';

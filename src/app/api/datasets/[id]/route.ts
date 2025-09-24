@@ -30,7 +30,6 @@ export async function GET(
       );
     }
 
-    console.log(`Found dataset ${id}`);
 
     const transformed = transformDataset(rawDataset);
 

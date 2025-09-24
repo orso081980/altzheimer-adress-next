@@ -20,7 +20,6 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .toArray();
 
-    console.log(`Found ${rawDatasets.length} documents from skip=${skip}`);
 
     const datasets = [];
     

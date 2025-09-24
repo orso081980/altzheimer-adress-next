@@ -254,11 +254,6 @@ function DatasetViewContent({ params }: Props) {
             <div className="border-t border-gray-200">
               <div className="space-y-6">
                 {dataset.utterances.map((utterance, index) => {
-                  console.log('utterance', index, utterance, 'typeof:', typeof utterance);
-                  console.log('utterance.text:', utterance.text, 'typeof:', typeof utterance.text);
-                  console.log('utterance.speaker:', utterance.speaker, 'typeof:', typeof utterance.speaker);
-                  console.log('utterance.morphology:', utterance.morphology, 'typeof:', typeof utterance.morphology);
-                  console.log('utterance.grammar:', utterance.grammar, 'typeof:', typeof utterance.grammar);
                   
                   // Ultra-safe string conversion - will never return an object
                   const getSafeString = (value: unknown): string => {

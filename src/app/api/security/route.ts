@@ -2,6 +2,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SecurityTracker } from '@/lib/security-tracker';
 
+function getClientIP(headers: Headers | Record<string, string | string[] | undefined>): string {
+  let forwarded: string | undefined = undefined;
+  let realIp: string | undefined = undefined;
+  if (headers instanceof Headers) {
+    forwarded = headers.get('x-forwarded-for') || undefined;
+    realIp = headers.get('x-real-ip') || undefined;
+  } else {
+    forwarded = typeof headers['x-forwarded-for'] === 'string'
+      ? headers['x-forwarded-for'] as string
+      : Array.isArray(headers['x-forwarded-for'])
+        ? headers['x-forwarded-for'][0]
+        : undefined;
+    realIp = typeof headers['x-real-ip'] === 'string'
+      ? headers['x-real-ip'] as string
+      : Array.isArray(headers['x-real-ip'])
+        ? headers['x-real-ip'][0]
+        : undefined;
+  }
+  if (forwarded) {
+    return forwarded.split(',')[0].trim();
+  }
+  if (realIp) {
+    return realIp;
+  }
+  return 'unknown';
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -15,12 +42,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+  const ip = getClientIP(request.headers);
+
     await SecurityTracker.logEvent(
       request.headers,
       event,
       path,
       email,
-      details
+      details ? `${details} | IP: ${ip}` : `IP: ${ip}`
     );
 
     return NextResponse.json({ success: true });

@@ -6,7 +6,7 @@ import clientPromise from '@/lib/mongodb';
 export interface SecurityEvent {
   ip: string;
   userAgent: string;
-  event: 'page_access' | 'login_success' | 'login_failed' | 'unauthorized_access';
+  event: 'page_access' | 'login_success' | 'login_failed' | 'unauthorized_access' | 'logout';
   path: string;
   email?: string;
   timestamp: Date;

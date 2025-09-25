@@ -81,20 +81,7 @@ export const authOptions = {
             { $set: { lastLogin: new Date() } }
           )
 
-          // Log successful login - simplified for Edge Runtime compatibility
-          try {
-            await db.collection('security_logs').insertOne({
-              ip: 'unknown', // IP tracking will be handled client-side
-              userAgent: 'unknown',
-              event: 'login_success',
-              path: '/auth/signin',
-              email: user.email.toLowerCase(),
-              timestamp: new Date(),
-              details: 'Successful authentication',
-            });
-          } catch (error) {
-            console.error('Failed to log security event:', error);
-          }
+          // Removed server-side login_success event logging to avoid duplicate/confusing entries with 'unknown' IP.
 
           return {
             id: user._id.toString(),

@@ -44,3 +44,4 @@ create-admin-user.js
 change-admin-password.ts
 delete-admin-user.ts
 generate-password.ts
+delete-all-security-logs.ts

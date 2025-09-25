@@ -10,7 +10,20 @@ export default function NavigationHeader() {
 
   if (!session) return null;
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
+    // Log logout event with client IP
+    if (session?.user?.email) {
+      await fetch('/api/security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'logout',
+          path: window.location.pathname,
+          email: session.user.email,
+          details: 'Client-side logout event',
+        }),
+      });
+    }
     signOut({ callbackUrl: '/auth/signin' });
   };
 

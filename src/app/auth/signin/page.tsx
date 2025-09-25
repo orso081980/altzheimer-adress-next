@@ -29,6 +29,17 @@ export default function SignIn() {
         // Refresh session and redirect
         const session = await getSession();
         if (session) {
+          // Log login_success event with client IP
+          fetch('/api/security', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'login_success',
+              path: '/auth/signin',
+              email: session.user.email,
+              details: 'Client-side login event',
+            }),
+          });
           router.push('/');
           router.refresh();
         }
